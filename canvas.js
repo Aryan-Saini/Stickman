@@ -2,14 +2,15 @@ const doc = document;
 const body = doc.querySelector('body');
 const can = doc.querySelector('canvas');
 const c = can.getContext("2d");
+const health = doc.getElementById("barOne");
+const healthEne = doc.getElementById("barTwo");
 
-can.width = 1024;
-can.height = 576;
 const gravity = 0.2;
-
+can.width = 1280;
+can.height = 780;
 
 class Sprite {
-  constructor({ pos, color }) {
+  constructor({ pos, color, offset }) {
     this.pos = pos;
     this.color = color;
     this.vel = {
@@ -19,8 +20,13 @@ class Sprite {
     this.isAttacking = false;
     this.width = 50;
     this.height = 150;
+    this.isBlocking = false;
     this.attackBox = {
-      pos: this.pos,
+      pos: {
+        x: this.pos.x,
+        y: this.pos.y
+      },
+      offset,
       width: 100,
       height: 50
     };
@@ -41,19 +47,29 @@ class Sprite {
 
       lastKey: ''
     };
+    this.totalHealth = health.clientWidth;
+    this.health = health.clientWidth;
   }
 
   draw() {
     c.fillStyle = this.color;
     c.fillRect(this.pos.x, this.pos.y, this.width, this.height);
-    c.fillStyle = 'white';
-    c.fillRect(this.attackBox.pos.x, this.attackBox.pos.y, this.attackBox.width, this.attackBox.height);
+    //unccoment 
+    if (this.isAttacking) {
+      c.fillStyle = 'white';
+      c.fillRect(this.attackBox.pos.x, this.attackBox.pos.y, this.attackBox.width, this.attackBox.height);
+    }
+
   }
 
   update() {
     this.draw();
+
+
     this.pos.x += this.vel.x;
     this.pos.y += this.vel.y;
+    this.attackBox.pos.x = this.pos.x + this.attackBox.offset.x;
+    this.attackBox.pos.y = this.pos.y;
     this.move();
     if (this.pos.y + this.height + this.vel.y >= can.height) {
       this.vel.y = 0;
@@ -64,27 +80,46 @@ class Sprite {
   }
 
   move() {
-    if (Player.keys.a.pressed && Player.keys.lastKey == 'a') {
-      Player.vel.x = -1;
-    } else if (Player.keys.d.pressed && Player.keys.lastKey == 'd') {
-      Player.vel.x = 1;
+    if (this.keys.a.pressed && this.keys.lastKey == 'a' && this.pos.x >= 0) {
+      this.vel.x = -1;
+    } else if (this.keys.d.pressed && this.keys.lastKey == 'd' && this.pos.x + this.width <= can.width) {
+      this.vel.x = 1;
     } else {
-      Player.vel.x = 0;
+      this.vel.x = 0;
     }
-    if (Player.keys.w.pressed && !Player.keys.w.activated) {
-      Player.vel.y = -10;
-      Player.keys.w.activated = true;
+    if (this.keys.w.pressed && !this.keys.w.activated) {
+      this.vel.y = -10;
+      this.keys.w.activated = true;
       console.log(this.keys.w.activated);
-    } else if (Player.keys.s.pressed && Player.keys.lastKey == 's') {
+    } else if (this.keys.s.pressed && this.keys.lastKey == 's') {
 
     }
   }
 
-  attack() {
+  attack(type) {
+
     this.isAttacking = true;
     setTimeout(() => {
       this.isAttacking = false;
     }, 100)
+    console.log("attack");
+    if (type == 1) {
+
+      //punch by click
+    } else if (type == 2) {
+      //kick by space
+    }
+  }
+
+  block() {
+    // by right click quick block
+    if (!this.isAttacking) {
+      console.log("block");
+      this.isBlocking = true;
+      setTimeout(() => {
+        this.isBlocking = false;
+      }, 100)
+    }
   }
 
 }
@@ -94,29 +129,47 @@ const Player = new Sprite({
     x: 0,
     y: 0
   }, color: 'red',
+  offset: {
+    x: 0,
+    y: 0
+  }
 });
 
 const Enemy = new Sprite({
   pos: {
     x: 400,
     y: 100
-  }, color: 'green'
+  }, color: 'green',
+  offset: {
+    x: -50,
+    y: 0
+  }
 });
 
+function retangularColli({ rectangle1, rectangle2 }) {
+  return (rectangle1.attackBox.pos.x + rectangle1.attackBox.width >= rectangle2.pos.x
+    && rectangle1.attackBox.pos.x <= rectangle2.pos.x + rectangle2.width
+    && rectangle1.attackBox.pos.y + rectangle1.attackBox.height >= rectangle2.pos.y
+    && rectangle1.attackBox.pos.y <= rectangle2.pos.y + rectangle2.height
+    && rectangle1.isAttacking)
+}
+
 function detectCollioson() {
-  if (Player.attackBox.pos.x + Player.attackBox.width >= Enemy.pos.x
-    && Player.attackBox.pos.x <= Enemy.pos.x + Enemy.width
-    && Player.attackBox.pos.y + Player.attackBox.height >= Enemy.pos.y
-    && Player.attackBox.pos.y <= Enemy.pos.y + Enemy.height
-    && Player.isAttacking) {
-    console.log("go");
+  if (retangularColli({ rectangle1: Player, rectangle2: Enemy })) {
+    Player.isAttacking = false;
+    Enemy.health -= Enemy.totalHealth * 0.13;
+    healthEne.style.width = `${Enemy.health}px`;
+  } else if (retangularColli({ rectangle1: Enemy, rectangle2: Player })) {
+    Enemy.isAttacking = false;
+    Player.health -= Player.totalHealth * 0.13;
   }
 }
 
 function animate() {
+
   window.requestAnimationFrame(animate);
 
-  c.fillStyle = "black";
+  c.fillStyle = "white";
   c.fillRect(0, 0, can.width, can.height);
   Player.update();
   Enemy.update();
@@ -142,10 +195,24 @@ window.addEventListener("keydown", (event) => {
       Player.keys.a.pressed = true;
       Player.keys.lastKey = 'a';
       break;
+    case ' ':
+      Player.attack(2)
+      break;
   }
 });
 
+window.addEventListener("mousedown", (event) => {
+  console.log(event);
+  switch (event.buttons) {
+    case 1:
+      Player.attack(1)
+      break;
+    case 2:
+      Player.block()
+      break;
+  }
 
+});
 window.addEventListener("keyup", (event) => {
   switch (event.key.toLowerCase()) {
     case 'd':

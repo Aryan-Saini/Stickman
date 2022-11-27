@@ -1,0 +1,40 @@
+@font-face {
+  font-family: game;
+  src: url(./font/Chibolddemo-1GD7g.ttf);
+}
+*{
+  box-sizing: border-box;
+}
+canvas{
+  margin: 0 auto;
+  border-bottom: 5px solid black;
+}
+.cont{
+  position: relative;
+  display: inline-block;
+}
+.ui {
+  position: absolute;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+}
+.healthBar{
+  width: 100%;
+  position: relative;
+  border: 10px solid black;
+  border-radius: 15px;
+}
+#barOne, #barTwo {
+  background-color: greenyellow;
+  height: 30px;
+  width: 100%;
+}
+.time {
+  background-color: white;
+  width: 100px;
+  height: 100px;
+  flex-shrink: 0;
+  border: 5px solid  black;
+}
