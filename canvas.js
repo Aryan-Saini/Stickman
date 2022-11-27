@@ -4,10 +4,26 @@ const can = doc.querySelector('canvas');
 const c = can.getContext("2d");
 const health = doc.getElementById("barOne");
 const healthEne = doc.getElementById("barTwo");
-
+const time = doc.getElementById("time");
 const gravity = 0.2;
 can.width = 1280;
 can.height = 780;
+var timer = 60;
+time.innerHTML = timer;
+
+
+function timerDec() {
+  setTimeout(timerDec, 1000)
+  if (timer > 0) {
+    timer--;
+    time.innerHTML = timer;
+  } else {
+    checkWin();
+  }
+}
+timerDec();
+
+
 
 class Sprite {
   constructor({ pos, color, offset }) {
@@ -47,8 +63,7 @@ class Sprite {
 
       lastKey: ''
     };
-    this.totalHealth = health.clientWidth;
-    this.health = health.clientWidth;
+    this.health = 100;
   }
 
   draw() {
@@ -157,11 +172,26 @@ function retangularColli({ rectangle1, rectangle2 }) {
 function detectCollioson() {
   if (retangularColli({ rectangle1: Player, rectangle2: Enemy })) {
     Player.isAttacking = false;
-    Enemy.health -= Enemy.totalHealth * 0.13;
-    healthEne.style.width = `${Enemy.health}px`;
+    Enemy.health -= 13;
+    healthEne.style.width = `${Enemy.health}%`;
+
+    if (Enemy.health == 0) {
+
+    }
   } else if (retangularColli({ rectangle1: Enemy, rectangle2: Player })) {
     Enemy.isAttacking = false;
-    Player.health -= Player.totalHealth * 0.13;
+    Player.health -= 13;
+    health.style.width = `${Player.health}%`;
+  }
+}
+
+function checkWin() {
+  if (Player.health === Enemy.health) {
+
+  } else if (Enemy.health === 0) {
+
+  } else if (Player.health === 0) {
+
   }
 }
 
