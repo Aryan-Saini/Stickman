@@ -36,7 +36,10 @@ io.on('connection', socket => {
     console.log(mainPlayer);
     socket.broadcast.to(room).emit("EnemyMovement", mainPlayer);
   })
-
+  socket.on("PlayerAttack", ({ mainPlayer, room }) => {
+    console.log(mainPlayer);
+    socket.broadcast.to(room).emit("EnemyMovement", mainPlayer);
+  })
 
 
   socket.on('disconnect', () => {
@@ -50,5 +53,5 @@ io.on('connection', socket => {
 
 });
 
-const PORT = 3000 || process.env.PORT;
+const PORT = 80 || process.e8nv.PORT;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

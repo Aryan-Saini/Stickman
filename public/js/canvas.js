@@ -240,6 +240,12 @@ socket.on('EnemyMovement', ene => {
   }
 })
 
+socket.on("EnemyMovement", ene => {
+  if (mainPlayer.id == ene.id) {
+    mainPlayer.health == ene.health;
+  }
+})
+
 
 function timerDec() {
   setTimeout(timerDec, 1000)
@@ -266,7 +272,9 @@ function detectCollioson() {
     mainPlayer.isAttacking = false;
     enemy.health -= 13;
     enemy.refHealth.style.width = `${enemy.health}%`;
-
+    if (enemy && mainPlayer) {
+      socket.emit("PlayerAttack", { enemy, room });
+    }
     if (Players[1].health == 0) {
 
     }
@@ -274,6 +282,9 @@ function detectCollioson() {
     enemy.isAttacking = false;
     mainPlayer.health -= 13;
     mainPlayer.refHealth.style.width = `${mainPlayer.health}%`;
+    if (enemy && mainPlayer) {
+      socket.emit("PlayerAttack", { enemy, room });
+    }
   }
 }
 
