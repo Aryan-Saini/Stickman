@@ -1,3 +1,5 @@
+
+
 const doc = document;
 const body = doc.querySelector('body');
 const can = doc.querySelector('canvas');
@@ -5,30 +7,19 @@ const c = can.getContext("2d");
 const health = doc.getElementById("barOne");
 const healthEne = doc.getElementById("barTwo");
 const time = doc.getElementById("time");
+const play1 = doc.getElementById("play1");
+const play2 = doc.getElementById("play2");
 const gravity = 0.2;
 can.width = 1280;
 can.height = 780;
 var timer = 60;
 time.innerHTML = timer;
 
-
-function timerDec() {
-  setTimeout(timerDec, 1000)
-  if (timer > 0) {
-    timer--;
-    time.innerHTML = timer;
-  } else {
-    checkWin();
-  }
-}
-timerDec();
-
-
-
 class Sprite {
-  constructor({ pos, color, offset }) {
+  constructor({ pos, color, offset, username, id }) {
     this.pos = pos;
     this.color = color;
+    this.refHealth;
     this.vel = {
       x: 0,
       y: 0
@@ -64,6 +55,8 @@ class Sprite {
       lastKey: ''
     };
     this.health = 100;
+    this.username = username;
+    this.id = id;
   }
 
   draw() {
@@ -79,8 +72,6 @@ class Sprite {
 
   update() {
     this.draw();
-
-
     this.pos.x += this.vel.x;
     this.pos.y += this.vel.y;
     this.attackBox.pos.x = this.pos.x + this.attackBox.offset.x;
@@ -126,6 +117,13 @@ class Sprite {
     }
   }
 
+  updateEverything(itm) {
+    this.pos = itm.pos;
+    this.attackBox = itm.attackBox;
+    this.isAttacking = itm.isAttacking;
+    this.keys = itm.keys;
+    this.vel = itm.vel;
+  }
   block() {
     // by right click quick block
     if (!this.isAttacking) {
@@ -139,7 +137,25 @@ class Sprite {
 
 }
 
-const Player = new Sprite({
+const { username, room } = Qs.parse(location.search, {
+  ignoreQueryPrefix: true,
+});
+
+const socket = io();
+
+socket.emit('joinRoom', { username, room });
+
+socket.on('message', message => {
+  console.log(message);
+});
+
+socket.on('redirect', message => {
+  if (message === "/") {
+    window.location.href = "http://localhost:3000/";
+  }
+});
+
+let Players = [new Sprite({
   pos: {
     x: 0,
     y: 0
@@ -147,19 +163,97 @@ const Player = new Sprite({
   offset: {
     x: 0,
     y: 0
-  }
-});
-
-const Enemy = new Sprite({
+  },
+  username: "itm.username",
+  id: "itm.id"
+}), new Sprite({
   pos: {
-    x: 400,
-    y: 100
-  }, color: 'green',
-  offset: {
-    x: -50,
+    x: 0,
     y: 0
+  }, color: 'red',
+  offset: {
+    x: 0,
+    y: 0
+  },
+  username: "itm.username",
+  id: "itm.id"
+})];
+
+let mainPlayer;
+let enemy;
+function assighnPlayers(users) {
+  Players = users.map((itm) => new Sprite({
+    pos: {
+      x: 0,
+      y: 0
+    }, color: 'red',
+    offset: {
+      x: 0,
+      y: 0
+    },
+    username: itm.username,
+    id: itm.id
+  }));
+  console.log(Players);
+
+  if (socket.id == Players[0].id) {
+    Players[0].pos.x = can.width / 4;
+    Players[0].pos.y = 300;
+    Players[0].refHealth = health;
+    play1.innerHTML = Players[0].username;
+    mainPlayer = Players[0];
+  } else {
+    Players[1].pos.x = can.width / 2 + can.width / 4;
+    Players[1].pos.y = 300;
+    mainPlayer = Players[1];
+    Players[0].color = "black";
+    Players[0].pos.x = can.width / 4;
+    Players[0].pos.y = 300;
+    Players[1].refHealth = healthEne;
+    Players[0].refHealth = health;
+    play1.innerHTML = Players[0].username;
+    play2.innerHTML = Players[1].username;
+    enemy = Players[0];
   }
-});
+
+
+  if (users.length == 2 && socket.id == Players[0].id) {
+    Players[1].color = "black";
+    Players[1].pos.x = can.width / 2 + can.width / 4;
+    Players[1].pos.y = 300;
+    Players[1].refHealth = healthEne;
+    play2.innerHTML = Players[1].username;
+    enemy = Players[1];
+  }
+
+};
+
+
+socket.on('roomUsers', users => {
+  assighnPlayers(users.users);
+})
+
+socket.on('EnemyMovement', ene => {
+  if (mainPlayer.id != ene.id) {
+    console.log(enemy);
+    console.log(ene);
+    enemy.updateEverything(ene);
+    enemy.color = "black";
+  }
+})
+
+
+function timerDec() {
+  setTimeout(timerDec, 1000)
+  if (timer > 0) {
+    timer--;
+    time.innerHTML = timer;
+  } else {
+    checkWin();
+  }
+}
+timerDec();
+
 
 function retangularColli({ rectangle1, rectangle2 }) {
   return (rectangle1.attackBox.pos.x + rectangle1.attackBox.width >= rectangle2.pos.x
@@ -170,27 +264,27 @@ function retangularColli({ rectangle1, rectangle2 }) {
 }
 
 function detectCollioson() {
-  if (retangularColli({ rectangle1: Player, rectangle2: Enemy })) {
-    Player.isAttacking = false;
-    Enemy.health -= 13;
-    healthEne.style.width = `${Enemy.health}%`;
+  if (retangularColli({ rectangle1: mainPlayer, rectangle2: enemy })) {
+    mainPlayer.isAttacking = false;
+    enemy.health -= 13;
+    enemy.refHealth.style.width = `${enemy.health}%`;
 
-    if (Enemy.health == 0) {
+    if (Players[1].health == 0) {
 
     }
-  } else if (retangularColli({ rectangle1: Enemy, rectangle2: Player })) {
-    Enemy.isAttacking = false;
-    Player.health -= 13;
-    health.style.width = `${Player.health}%`;
+  } else if (retangularColli({ rectangle1: enemy, rectangle2: mainPlayer })) {
+    enemy.isAttacking = false;
+    mainPlayer.health -= 13;
+    mainPlayer.refHealth.style.width = `${mainPlayer.health}%`;
   }
 }
 
 function checkWin() {
-  if (Player.health === Enemy.health) {
+  if (mainPlayer.health === enemy.health) {
 
-  } else if (Enemy.health === 0) {
+  } else if (enemy.health === 0) {
 
-  } else if (Player.health === 0) {
+  } else if (mainPlayer.health === 0) {
 
   }
 }
@@ -201,61 +295,76 @@ function animate() {
 
   c.fillStyle = "white";
   c.fillRect(0, 0, can.width, can.height);
-  Player.update();
-  Enemy.update();
-  detectCollioson();
+  if (Players.length > 0) {
+    mainPlayer.update();
+  }
+  if (Players.length > 1) {
+    enemy.update();
+    detectCollioson();
+  }
+
 }
 
 
 
 window.addEventListener("keydown", (event) => {
+  if (enemy && mainPlayer) {
+    socket.emit("PlayerUpdate", mainPlayer);
+  }
+
   switch (event.key.toLowerCase()) {
     case 'd':
-      Player.keys.d.pressed = true;
-      Player.keys.lastKey = 'd';
+      mainPlayer.keys.d.pressed = true;
+      mainPlayer.keys.lastKey = 'd';
       break;
     case 'a':
-      Player.keys.a.pressed = true;
-      Player.keys.lastKey = 'a';
+      mainPlayer.keys.a.pressed = true;
+      mainPlayer.keys.lastKey = 'a';
       break;
     case 'w':
-      Player.keys.w.pressed = true;
+      mainPlayer.keys.w.pressed = true;
       break;
     case 's':
-      Player.keys.a.pressed = true;
-      Player.keys.lastKey = 'a';
+      mainPlayer.keys.a.pressed = true;
+      mainPlayer.keys.lastKey = 'a';
       break;
     case ' ':
-      Player.attack(2)
+      mainPlayer.attack(2)
       break;
   }
 });
 
 window.addEventListener("mousedown", (event) => {
+  if (enemy && mainPlayer) {
+    socket.emit("PlayerUpdate", mainPlayer);
+  }
   console.log(event);
   switch (event.buttons) {
     case 1:
-      Player.attack(1)
+      mainPlayer.attack(1)
       break;
     case 2:
-      Player.block()
+      mainPlayer.block()
       break;
   }
 
 });
 window.addEventListener("keyup", (event) => {
+  if (enemy && mainPlayer) {
+    socket.emit("PlayerUpdate", mainPlayer);
+  }
   switch (event.key.toLowerCase()) {
     case 'd':
-      Player.keys.d.pressed = false;
+      mainPlayer.keys.d.pressed = false;
       break;
     case 'a':
-      Player.keys.a.pressed = false;
+      mainPlayer.keys.a.pressed = false;
       break;
     case 'w':
-      Player.keys.w.pressed = false;
+      mainPlayer.keys.w.pressed = false;
       break;
     case 's':
-      Player.keys.a.pressed = false;
+      mainPlayer.keys.a.pressed = false;
       break;
   }
 });

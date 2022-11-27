@@ -35,7 +35,12 @@ canvas{
   display: flex;
   
 }
-
+.healthBar p {
+  position: absolute;
+  font-size: 1.7rem;
+  margin: 2px 10px 0 10px;
+  font-family: game;
+}
 .firstHealth{
   justify-content: flex-end;
 }
