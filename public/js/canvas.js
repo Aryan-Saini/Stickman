@@ -118,11 +118,9 @@ class Sprite {
   }
 
   updateEverything(itm) {
-    this.pos = itm.pos;
     this.attackBox = itm.attackBox;
     this.isAttacking = itm.isAttacking;
     this.keys = itm.keys;
-    this.vel = itm.vel;
   }
   block() {
     // by right click quick block
@@ -308,9 +306,7 @@ function animate() {
 
 
 window.addEventListener("keydown", (event) => {
-  if (enemy && mainPlayer) {
-    socket.emit("PlayerUpdate", mainPlayer);
-  }
+
 
   switch (event.key.toLowerCase()) {
     case 'd':
@@ -332,12 +328,14 @@ window.addEventListener("keydown", (event) => {
       mainPlayer.attack(2)
       break;
   }
+
+  if (enemy && mainPlayer) {
+    socket.emit("PlayerUpdate", { mainPlayer, room });
+  }
 });
 
 window.addEventListener("mousedown", (event) => {
-  if (enemy && mainPlayer) {
-    socket.emit("PlayerUpdate", mainPlayer);
-  }
+
   console.log(event);
   switch (event.buttons) {
     case 1:
@@ -347,12 +345,11 @@ window.addEventListener("mousedown", (event) => {
       mainPlayer.block()
       break;
   }
-
+  if (enemy && mainPlayer) {
+    socket.emit("PlayerUpdate", { mainPlayer, room });
+  }
 });
 window.addEventListener("keyup", (event) => {
-  if (enemy && mainPlayer) {
-    socket.emit("PlayerUpdate", mainPlayer);
-  }
   switch (event.key.toLowerCase()) {
     case 'd':
       mainPlayer.keys.d.pressed = false;
@@ -366,6 +363,10 @@ window.addEventListener("keyup", (event) => {
     case 's':
       mainPlayer.keys.a.pressed = false;
       break;
+  }
+
+  if (enemy && mainPlayer) {
+    socket.emit("PlayerUpdate", { mainPlayer, room });
   }
 });
 

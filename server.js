@@ -32,11 +32,12 @@ io.on('connection', socket => {
   });
 
   //! listen to movement in specif room
-  socket.on("PlayerUpdate", playerObj => {
-    const user = getCurrentUser(socket.id);
-    console.log(user);
-    socket.broadcast.to(user.room).emit("EnemyMovement", playerObj);
+  socket.on("PlayerUpdate", ({ mainPlayer, room }) => {
+    console.log(mainPlayer);
+    socket.broadcast.to(room).emit("EnemyMovement", mainPlayer);
   })
+
+
 
   socket.on('disconnect', () => {
     const user = userLeave(socket.id);
